@@ -1,0 +1,148 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html {
+  scroll-behavior: smooth;
+  background-color: #0b0b0c;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+body {
+  background-color: #0b0b0c;
+  color: #f4efe8;
+  font-family: "Inter", ui-sans-serif, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  cursor: none;
+}
+
+::selection {
+  background: #e1006b;
+  color: #0b0b0c;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+}
+::-webkit-scrollbar-track {
+  background: #0b0b0c;
+}
+::-webkit-scrollbar-thumb {
+  background: #2a2a2c;
+  border-radius: 6px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #e1006b;
+}
+
+/* Visible keyboard focus, kept quiet but unmistakable */
+:focus-visible {
+  outline: 2px solid #e1006b;
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
+.font-display {
+  font-family: "Fraunces", ui-serif, Georgia, serif;
+}
+
+.font-mono-cap {
+  font-family: "Space Mono", ui-monospace, monospace;
+}
+
+/* Editorial image placeholder treatment */
+.plate {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(155deg, #161617 0%, #0d0d0e 60%, #0b0b0c 100%);
+  border: 1px solid rgba(244, 239, 232, 0.07);
+}
+
+.plate::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    circle at 30% 20%,
+    rgba(225, 0, 107, 0.06),
+    transparent 60%
+  );
+}
+
+.grain {
+  background-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPScxMjAnIGhlaWdodD0nMTIwJz48ZmlsdGVyIGlkPSduJz48ZmVUdXJidWxlbmNlIHR5cGU9J2ZyYWN0YWxOb2lzZScgYmFzZUZyZXF1ZW5jeT0nMC44JyBudW1PY3RhdmVzPScyJyBzdGl0Y2hUaWxlcz0nc3RpdGNoJy8+PC9maWx0ZXI+PHJlY3Qgd2lkdGg9JzEwMCUnIGhlaWdodD0nMTAwJScgZmlsdGVyPSd1cmwoI24pJyBvcGFjaXR5PScwLjAzNScvPjwvc3ZnPg==");
+  pointer-events: none;
+}
+
+/* Carbon-fibre weave texture for engineering sections */
+.carbon {
+  background-color: #0d0d0e;
+  background-image:
+    repeating-linear-gradient(
+      45deg,
+      rgba(255, 255, 255, 0.025) 0px,
+      rgba(255, 255, 255, 0.025) 1px,
+      transparent 1px,
+      transparent 6px
+    ),
+    repeating-linear-gradient(
+      -45deg,
+      rgba(255, 255, 255, 0.025) 0px,
+      rgba(255, 255, 255, 0.025) 1px,
+      transparent 1px,
+      transparent 6px
+    );
+}
+
+/* Engine-running pulse on ignition button */
+@keyframes enginePulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(225, 0, 107, 0.5); }
+  50%       { box-shadow: 0 0 0 10px rgba(225, 0, 107, 0); }
+}
+.engine-on {
+  animation: enginePulse 1.4s ease-in-out infinite;
+}
+
+/* Airflow dash animation for aerodynamics SVG */
+@keyframes airflow {
+  from { stroke-dashoffset: 80; }
+  to   { stroke-dashoffset: 0; }
+}
+.airflow-path {
+  animation: airflow 2.2s linear infinite;
+}
+.airflow-path-slow {
+  animation: airflow 3.5s linear infinite;
+}
+
+/* Magnetic button hover zone */
+.magnetic {
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Chapter-number watermark behind section content */
+.chapter-bg {
+  position: absolute;
+  right: -0.05em;
+  bottom: -0.15em;
+  font-size: clamp(8rem, 22vw, 22rem);
+  line-height: 1;
+  color: rgba(255, 255, 255, 0.025);
+  font-family: "Fraunces", ui-serif, Georgia, serif;
+  pointer-events: none;
+  user-select: none;
+  overflow: hidden;
+}
