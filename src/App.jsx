@@ -6,6 +6,7 @@ import {
   useTransform,
   useInView,
   useAnimation,
+  useMotionValueEvent,
 } from "framer-motion";
 import Spine from "./components/Spine.jsx";
 import Reveal from "./components/Reveal.jsx";
@@ -166,7 +167,7 @@ export default function App() {
   const [seqDone, setSeqDone] = useState(false);
 
   return (
-    <div className="bg-void text-ink font-body relative overflow-x-hidden cursor-none">
+    <div className="bg-void text-ink font-body relative overflow-x-clip cursor-none">
       <AnimatePresence>
         {!seqDone && (
           <DriveSequence onComplete={() => setSeqDone(true)} />
@@ -604,34 +605,132 @@ function Engineering() {
   );
 }
 
+/* Progress dot — fills ruby as the stack scrolls past its poster. */
+function PosterDot({ progress, start, end }) {
+  const bg = useTransform(progress, [start, end], ["rgba(255,255,255,0.22)", "rgba(225,0,107,0.95)"]);
+  return <motion.div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: bg }} />;
+}
+
+/* One poster in the pinned stack. It rests centred (covered by the posters
+   above it) until its slice of scroll arrives, then flies up-and-back —
+   tumbling and fading — to reveal the poster sitting beneath it.
+
+   The LAST poster never flies: it stays centred and simply scrolls away with
+   the stage when the sticky zone releases, handing straight off to the next
+   section (no duplicated image, no black gap). */
+function StackPoster({ src, alt, caption, index, total, progress, sliceStart, sliceEnd, fly }) {
+  const flyStart = sliceStart + (sliceEnd - sliceStart) * 0.4; // brief rest, then fly
+
+  const y       = useTransform(progress, [flyStart, sliceEnd], ["0%", "-135%"]);
+  const rotateZ = useTransform(progress, [flyStart, sliceEnd], [0, index % 2 ? 13 : -13]);
+  const rotateX = useTransform(progress, [flyStart, sliceEnd], [0, 40]);
+  const scale   = useTransform(progress, [flyStart, sliceEnd], [1, 0.74]);
+  const opacity = useTransform(progress, [flyStart, sliceEnd], [1, 0]);
+
+  const motionStyle = fly
+    ? { zIndex: total - index, y, rotateZ, rotateX, scale, opacity, transformStyle: "preserve-3d" }
+    : { zIndex: total - index };
+
+  return (
+    <motion.div
+      className="absolute inset-0 flex items-center justify-center pointer-events-none"
+      style={motionStyle}
+    >
+      <div
+        className="relative overflow-hidden"
+        style={{
+          width:  "min(90vw, 960px)",
+          height: "min(84vh, 780px)",
+          boxShadow: "0 50px 110px rgba(0,0,0,0.72), 0 0 0 1px rgba(255,255,255,0.07)",
+        }}
+      >
+        <img src={src} alt={alt} className="w-full h-full object-cover" loading="lazy" />
+        <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-void/85 to-transparent" />
+        <div className="absolute bottom-5 left-5 right-5 flex items-end justify-between">
+          <p className="font-mono-cap text-[10px] uppercase tracking-widest2 text-ink/85 max-w-[70%]">{caption}</p>
+          <p className="font-mono-cap text-[10px] text-ruby tabular-nums">
+            {String(index + 1).padStart(2, "0")} / {String(total).padStart(2, "0")}
+          </p>
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
 /* ══════════════════════════════════════════════════════════════════
    03 · AERODYNAMICS
 ══════════════════════════════════════════════════════════════════ */
 function Aerodynamics() {
-  const sRef = useRef(null);
+  const sRef      = useRef(null);
+  const stickyRef = useRef(null);
+  const TOTAL     = COLOR_IMAGES.length;
+  const FLYERS    = TOTAL - 1;   // first N-1 posters fly; the last stays & scrolls off
+  const EXIT_END  = 0.86;        // the fliers finish over [0, EXIT_END]
+
+  /* Scroll progress through the pinned stack zone */
+  const { scrollYProgress: stackP } = useScroll({
+    target: stickyRef,
+    offset: ["start start", "end end"],
+  });
+
+  const hintFade = useTransform(stackP, [0, 0.06], [1, 0]);
+  const uiFade   = useTransform(stackP, [0.9, 0.99], [1, 0]);
+
+  /* Parallax for the full-bleed aero shot below */
   const { scrollYProgress } = useScroll({ target: sRef, offset: ["start end", "end start"] });
   const imgY = useTransform(scrollYProgress, [0, 1], ["-10%", "10%"]);
 
   return (
     <section id="aerodynamics" ref={sRef}>
-      {/* Pink GT3 mosaic — clip wipes in */}
-      <div className="grid grid-cols-2 md:grid-cols-3">
-        {COLOR_IMAGES.map((img, i) => (
+      {/*
+        Pinned poster stack. The stage stays fixed (sticky) so the page never
+        feels like it's moving — each poster flies away in turn to reveal the
+        next. The last poster stays put and scrolls off naturally as the sticky
+        zone releases, handing straight into the aero section below.
+      */}
+      <div ref={stickyRef} style={{ height: `${TOTAL * 80 + 90}vh` }}>
+        <div className="sticky top-0 h-screen overflow-hidden bg-void" style={{ perspective: "1400px" }}>
+          {COLOR_IMAGES.map((img, i) => {
+            const isLast = i === TOTAL - 1;
+            return (
+              <StackPoster
+                key={img.alt}
+                src={img.src}
+                alt={img.alt}
+                caption={img.alt}
+                index={i}
+                total={TOTAL}
+                progress={stackP}
+                sliceStart={(i / FLYERS) * EXIT_END}
+                sliceEnd={((i + 1) / FLYERS) * EXIT_END}
+                fly={!isLast}
+              />
+            );
+          })}
+
+          {/* Progress dots */}
           <motion.div
-            key={img.alt}
-            className={`relative overflow-hidden group ${i === 0 || i === 3 ? "row-span-2 aspect-[3/4]" : "aspect-square"}`}
-            initial={{ opacity: 0, scale: 1.05 }}
-            whileInView={{ opacity: 1, scale: 1 }}
-            viewport={{ once: true, amount: 0 }}
-            transition={{ duration: 0.9, delay: i * 0.07, ease: [0.16, 1, 0.3, 1] }}
+            className="absolute bottom-8 left-1/2 -translate-x-1/2 flex gap-2 z-[40] pointer-events-none"
+            style={{ opacity: uiFade }}
           >
-            <img
-              src={img.src} alt={img.alt}
-              className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-              loading="lazy"
-            />
+            {COLOR_IMAGES.map((_, i) => (
+              <PosterDot
+                key={i}
+                progress={stackP}
+                start={(i / TOTAL)}
+                end={((i + 1) / TOTAL)}
+              />
+            ))}
           </motion.div>
-        ))}
+
+          {/* Scroll hint */}
+          <motion.p
+            className="absolute bottom-8 right-8 z-[40] font-mono-cap text-[9px] uppercase tracking-widest2 pointer-events-none"
+            style={{ color: "rgba(255,255,255,0.3)", opacity: hintFade }}
+          >
+            Scroll to explore
+          </motion.p>
+        </div>
       </div>
 
       {/* Full-bleed aero shot + animated SVG airflow */}
